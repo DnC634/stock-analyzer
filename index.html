@@ -1,1 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台股分析工具 - FinMind</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .chart-container { height: 420px; }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div class="max-w-7xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">📈 台股分析工具</h1>
+        <p class="text-gray-500">FinMind API • 1年內資料 • 即時技術分析</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div id="token-status" class="px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full flex items-center gap-1">
+          <i class="fas fa-check-circle"></i> Token 已設定
+        </div>
+      </div>
+    </div>
 
+    <!-- 控制面板 -->
+    <div class="bg-white rounded-2xl shadow p-6 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Token -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">FinMind Token</label>
+          <div class="flex gap-2">
+            <input id="token-input" type="password" placeholder="貼上你的 FinMind Token" 
+                   class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500">
+            <button onclick="saveToken()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-medium">儲存</button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">去 <a href="https://finmindtrade.com/analysis/#/account/login" target="_blank" class="underline">FinMind官網</a> 登入取得</p>
+        </div>
+
+        <!-- 股票代碼 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">股票代碼（可多檔）</label>
+          <div class="flex gap-2">
+            <input id="stock-input" type="text" placeholder="例如：2330" 
+                   class="flex-1 border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500">
+            <button onclick="addStock()" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 rounded-xl font-medium">新增</button>
+          </div>
+          <div id="stock-list" class="flex flex-wrap gap-2 mt-3"></div>
+        </div>
+
+        <!-- 日期區間 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">資料時間區間（最多 1 年）</label>
+          <div class="flex gap-4">
+            <input id="start-date" type="date" class="border border-gray-300 rounded-xl px-4 py-3">
+            <input id="end-date" type="date" class="border border-gray-300 rounded-xl px-4 py-3">
+          </div>
+          <button onclick="fetchAllStocks()" 
+                  class="mt-4 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-2">
+            <i class="fas fa-sync"></i> 取得最新資料
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 股票卡片 -->
+    <div id="stocks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- 動態產生 -->
+    </div>
+
+    <!-- 詳細圖表區 -->
+    <div id="detail-panel" class="hidden mt-8 bg-white rounded-3xl shadow-xl p-6">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-3">
+          <h2 id="detail-title" class="text-2xl font-bold"></h2>
+        </div>
+        <button onclick="hideDetail()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-2xl"></i>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 主 K 線圖 -->
+        <div class="xl:col-span-2">
+          <h3 class="font-medium mb-3">K 線 + MA (5/20/60)</h3>
+          <div id="price-chart" class="chart-container border border-gray-200 rounded-2xl"></div>
+        </div>
+        
+        <!-- 指標與建議 -->
+        <div>
+          <div class="bg-gray-50 rounded-2xl p-5 mb-6">
+            <h3 class="font-medium mb-4">技術指標快照</h3>
+            <div id="indicators" class="space-y-4"></div>
+          </div>
+          
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5">
+            <h3 class="font-medium mb-3 flex items-center gap-2">
+              <i class="fas fa-lightbulb"></i> 操作建議
+            </h3>
+            <div id="suggestion" class="text-lg font-semibold"></div>
+            <div id="support-resistance" class="mt-6 grid grid-cols-2 gap-4 text-sm"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 設定 ====================
+    let stocks = JSON.parse(localStorage.getItem('stocks')) || ['2330'];
+    let token = localStorage.getItem('finmind_token') || '';
+    let currentData = {}; // 儲存每檔股票的資料
+
+    const apiBase = 'https://api.finmindtrade.com/api/v4/data';
+
+    // ==================== Tailwind 初始化 ====================
+    function initTailwind() {
+      tailwind.config = { content: ["./**/*.{html,js}"] };
+    }
+
+    // ==================== Token 管理 ====================
+    function saveToken() {
+      token = document.getElementById('token-input').value.trim();
+      if (token) {
+        localStorage.setItem('finmind_token', token);
+        document.getElementById('token-status').innerHTML = `<i class="fas fa-check-circle"></i> Token 已儲存`;
+        document.getElementById('token-status').className = 'px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full flex items-center gap-1';
+      }
+    }
+
+    // ==================== 股票清單 ====================
+    function renderStockList() {
+      const container = document.getElementById('stock-list');
+      container.innerHTML = '';
+      stocks.forEach((stock, index) => {
+        const badge = document.createElement('div');
+        badge.className = 'bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-2xl flex items-center gap-2 cursor-pointer';
+        badge.innerHTML = `
+          ${stock}
+          <button onclick="removeStock(${index}); event.stopImmediatePropagation();" class="text-red-500 hover:text-red-700">
+            <i class="fas fa-times"></i>
+          </button>
+        `;
+        container.appendChild(badge);
+      });
+    }
+
+    function addStock() {
+      const input = document.getElementById('stock-input');
+      const code = input.value.trim().toUpperCase();
+      if (code && !stocks.includes(code)) {
+        stocks.push(code);
+        localStorage.setItem('stocks', JSON.stringify(stocks));
+        renderStockList();
+        input.value = '';
+      }
+    }
+
+    function removeStock(index) {
+      stocks.splice(index, 1);
+      localStorage.setItem('stocks', JSON.stringify(stocks));
+      renderStockList();
+    }
+
+    // ==================== 日期預設 ====================
+    function setDefaultDates() {
+      const end = new Date();
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 1);
+      
+      document.getElementById('end-date').value = end.toISOString().split('T')[0];
+      document.getElementById('start-date').value = start.toISOString().split('T')[0];
+    }
+
+    // ==================== API
