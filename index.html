@@ -3,79 +3,139 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台股分析工具 - FinMind</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <title>台股分析工具</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; }
-    .chart-container { height: 460px; background: #fafafa; border-radius: 16px; }
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f8fafc; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 28px; font-weight: bold; text-align: center; margin: 20px 0; }
+    .card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
+    button { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-success { background: #10b981; color: white; }
+    .btn-danger { background: #ef4444; color: white; }
+    input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; margin-bottom: 8px; }
+    .stock-tag { display: inline-flex; align-items: center; background: #e5e7eb; padding: 6px 14px; border-radius: 9999px; margin: 4px 4px 4px 0; font-size: 14px; }
+    .chart-container { height: 420px; background: #f8fafc; border-radius: 12px; margin: 16px 0; }
   </style>
 </head>
-<body class="bg-gray-50">
-  <div class="max-w-7xl mx-auto p-4">
-    <h1 class="text-4xl font-bold text-center mb-2">📈 台股分析工具</h1>
-    <p class="text-center text-gray-500 mb-8">FinMind API • 多檔股票 • 完整技術分析</p>
+<body>
+  <div class="container">
+    <h1>📈 台股分析工具 (FinMind)</h1>
 
     <!-- Token -->
-    <div class="bg-white rounded-3xl shadow p-6 mb-6">
-      <label class="block text-sm font-medium mb-2">FinMind Token</label>
-      <div class="flex gap-3">
-        <input id="token-input" type="password" placeholder="貼上你的 Token" class="flex-1 px-5 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-indigo-500">
-        <button onclick="saveToken()" class="bg-indigo-600 text-white px-8 rounded-2xl font-medium">儲存</button>
+    <div class="card">
+      <label style="display:block; margin-bottom:8px; font-weight:600;">FinMind Token</label>
+      <div style="display:flex; gap:8px;">
+        <input id="token-input" type="password" placeholder="貼上你的 FinMind Token" style="flex:1;">
+        <button onclick="saveToken()" class="btn-primary">儲存</button>
       </div>
-      <div id="token-status" class="mt-3 text-sm"></div>
+      <div id="token-status" style="margin-top:8px; font-size:14px;"></div>
     </div>
 
     <!-- 股票與日期 -->
-    <div class="bg-white rounded-3xl shadow p-6 mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="card">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
         <div>
-          <label class="block text-sm font-medium mb-2">股票代碼（可多檔）</label>
-          <div class="flex gap-3">
-            <input id="stock-input" type="text" placeholder="例如：2330" class="flex-1 px-5 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-indigo-500">
-            <button onclick="addStock()" class="bg-emerald-600 text-white px-8 rounded-2xl font-medium">新增</button>
+          <label style="display:block; margin-bottom:8px; font-weight:600;">股票代碼</label>
+          <div style="display:flex; gap:8px;">
+            <input id="stock-input" type="text" placeholder="2330" style="flex:1;">
+            <button onclick="addStock()" class="btn-success">新增</button>
           </div>
-          <div id="stock-list" class="flex flex-wrap gap-2 mt-4"></div>
+          <div id="stock-list" style="margin-top:12px;"></div>
         </div>
         <div>
-          <label class="block text-sm font-medium mb-2">資料時間區間（最多 1 年）</label>
-          <div class="flex gap-4">
-            <input id="start-date" type="date" class="flex-1 px-5 py-3 border border-gray-300 rounded-2xl">
-            <input id="end-date" type="date" class="flex-1 px-5 py-3 border border-gray-300 rounded-2xl">
-          </div>
-          <button onclick="fetchAndAnalyze()" 
-                  class="mt-6 w-full bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-2xl font-semibold text-lg flex items-center justify-center gap-2">
-            <i class="fas fa-sync"></i> 取得資料並分析
-          </button>
+          <label style="display:block; margin-bottom:8px; font-weight:600;">資料區間</label>
+          <input id="start-date" type="date">
+          <input id="end-date" type="date" style="margin-top:8px;">
+          <button onclick="fetchAndAnalyze()" class="btn-primary" style="width:100%; margin-top:16px;">取得資料並分析</button>
         </div>
       </div>
     </div>
 
-    <!-- 股票卡片 -->
-    <div id="stocks-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-
-    <!-- 詳細分析面板 -->
-    <div id="detail-panel" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-3xl w-full max-w-5xl max-h-[95vh] overflow-auto">
-        <div class="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-          <h2 id="detail-title" class="text-3xl font-bold"></h2>
-          <button onclick="hideDetail()" class="text-4xl text-gray-400 hover:text-gray-600">×</button>
-        </div>
-        <div class="p-6">
-          <div id="price-chart" class="chart-container"></div>
-          <div id="analysis-panel" class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"></div>
-        </div>
-      </div>
-    </div>
+    <!-- 結果區域 -->
+    <div id="stocks-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;"></div>
   </div>
 
   <script>
     let stocks = JSON.parse(localStorage.getItem('stocks')) || ['2330'];
     let token = localStorage.getItem('finmind_token') || '';
-    let currentData = {};
 
     function saveToken() {
       token = document.getElementById('token-input').value.trim();
       if (token) {
-        localStorage.setItem('
+        localStorage.setItem('finmind_token', token);
+        document.getElementById('token-status').innerHTML = '✅ Token 已儲存';
+      }
+    }
+
+    function renderStockList() {
+      const container = document.getElementById('stock-list');
+      container.innerHTML = stocks.map((s, i) => `
+        <span class="stock-tag">${s} 
+          <span onclick="removeStock(${i}); event.stopImmediatePropagation()" style="margin-left:8px; color:#ef4444; cursor:pointer;">×</span>
+        </span>
+      `).join('');
+    }
+
+    function addStock() {
+      const code = document.getElementById('stock-input').value.trim().toUpperCase();
+      if (code && !stocks.includes(code)) {
+        stocks.push(code);
+        localStorage.setItem('stocks', JSON.stringify(stocks));
+        renderStockList();
+        document.getElementById('stock-input').value = '';
+      }
+    }
+
+    function removeStock(i) {
+      stocks.splice(i, 1);
+      localStorage.setItem('stocks', JSON.stringify(stocks));
+      renderStockList();
+    }
+
+    function setDefaultDates() {
+      const end = new Date().toISOString().split('T')[0];
+      const start = new Date();
+      start.setFullYear(start.getFullYear() - 1);
+      document.getElementById('end-date').value = end;
+      document.getElementById('start-date').value = start.toISOString().split('T')[0];
+    }
+
+    async function fetchAndAnalyze() {
+      const container = document.getElementById('stocks-container');
+      container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#6b7280;">🔄 正在取得資料...</div>';
+
+      if (!token) {
+        alert('請先輸入並儲存 FinMind Token！');
+        return;
+      }
+
+      const start = document.getElementById('start-date').value;
+      const end = document.getElementById('end-date').value;
+
+      for (let code of stocks) {
+        try {
+          const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${code}&start_date=${start}&end_date=${end}`;
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+          const json = await res.json();
+          if (json.data && json.data.length > 0) {
+            console.log(code + ' 資料取得成功');
+          }
+        } catch(e) {
+          console.error(code + ' 失敗', e);
+        }
+      }
+
+      container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px; color:#10b981; font-size:18px;">✅ 資料取得完成！<br>（後續 K線與分析功能會繼續加入）</div>';
+    }
+
+    // 初始化
+    window.onload = () => {
+      renderStockList();
+      setDefaultDates();
+      if (token) document.getElementById('token-status').innerHTML = '✅ Token 已載入';
+    };
+  </script>
+</body>
+</html>
