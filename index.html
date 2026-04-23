@@ -1,141 +1,651 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台股分析工具</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <style>
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; background: #f8fafc; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 16px; }
-    h1 { font-size: 28px; font-weight: bold; text-align: center; margin: 20px 0; }
-    .card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; margin-bottom: 20px; }
-    button { padding: 12px 20px; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; }
-    .btn-primary { background: #4f46e5; color: white; }
-    .btn-success { background: #10b981; color: white; }
-    .btn-danger { background: #ef4444; color: white; }
-    input, select { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 12px; margin-bottom: 8px; }
-    .stock-tag { display: inline-flex; align-items: center; background: #e5e7eb; padding: 6px 14px; border-radius: 9999px; margin: 4px 4px 4px 0; font-size: 14px; }
-    .chart-container { height: 420px; background: #f8fafc; border-radius: 12px; margin: 16px 0; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>台股技術分析工具</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --bg: #080d16;
+  --surface: #0f1724;
+  --surface2: #162030;
+  --border: #1a3358;
+  --accent: #38bdf8;
+  --accent2: #34d399;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --text: #cbd5e1;
+  --text-dim: #475569;
+  --up: #34d399;
+  --down: #f87171;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.header p { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+textarea, input[type=text], input[type=date] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  outline: none;
+  -webkit-appearance: none;
+}
+textarea { resize: none; height: 72px; }
+textarea:focus, input:focus { border-color: var(--accent); }
+
+.date-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.input-group label {
+  display: block;
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+input[type=date] { font-size: 13px; }
+
+.stock-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+  min-height: 32px;
+}
+.tag {
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tag .x {
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+.tag .x:hover { color: var(--danger); }
+
+.add-row { display: flex; gap: 8px; }
+.add-row input { font-size: 14px; }
+.add-row input::placeholder { font-size: 12px; color: var(--text-dim); }
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 13px;
+}
+.btn-add {
+  background: var(--surface2);
+  border: 1px solid var(--accent2);
+  color: var(--accent2);
+  white-space: nowrap;
+  padding: 11px 18px;
+}
+.btn-run {
+  width: 100%;
+  background: linear-gradient(135deg, #0369a1, #38bdf8);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 15px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 20px rgba(56,189,248,0.25);
+}
+.btn-run:active { transform: scale(0.98); }
+.btn-run:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.btn-copy {
+  width: 100%;
+  background: linear-gradient(135deg, #065f46, #34d399);
+  color: white;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 15px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 20px rgba(52,211,153,0.2);
+}
+.btn-copy:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.progress-wrap { display: none; margin-bottom: 8px; }
+.progress-bar {
+  width: 100%;
+  height: 3px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+.log {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  line-height: 1.9;
+  min-height: 36px;
+  padding: 6px 0;
+}
+.ok { color: var(--up); }
+.err { color: var(--danger); }
+.info { color: var(--accent); }
+
+.results-wrap { display: none; }
+
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 600px; }
+th {
+  background: var(--surface2);
+  color: var(--accent);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 9px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+th:first-child { text-align: left; }
+td {
+  padding: 9px 10px;
+  text-align: right;
+  border-bottom: 1px solid rgba(26,51,88,0.5);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  white-space: nowrap;
+}
+td:first-child { text-align: left; font-family: 'Noto Sans TC', sans-serif; font-size: 12px; }
+tr:hover td { background: rgba(56,189,248,0.04); }
+.up { color: var(--up); }
+.down { color: var(--down); }
+.flat { color: var(--text-dim); }
+.dim { color: var(--text-dim); font-size: 10px; font-style: italic; }
+.err-row { color: var(--danger); font-size: 10px; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.bull { background: rgba(52,211,153,0.15); color: var(--up); border: 1px solid rgba(52,211,153,0.3); }
+.bear { background: rgba(248,113,113,0.15); color: var(--down); border: 1px solid rgba(248,113,113,0.3); }
+.mid  { background: rgba(251,191,36,0.15); color: var(--warn); border: 1px solid rgba(251,191,36,0.3); }
+
+.output-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  line-height: 1.8;
+  color: var(--text-dim);
+  max-height: 180px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-bottom: 12px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--accent2);
+  color: #080d16;
+  padding: 11px 28px;
+  border-radius: 24px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  z-index: 999;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>📈 台股分析工具 (FinMind)</h1>
 
-    <!-- Token -->
-    <div class="card">
-      <label style="display:block; margin-bottom:8px; font-weight:600;">FinMind Token</label>
-      <div style="display:flex; gap:8px;">
-        <input id="token-input" type="password" placeholder="貼上你的 FinMind Token" style="flex:1;">
-        <button onclick="saveToken()" class="btn-primary">儲存</button>
-      </div>
-      <div id="token-status" style="margin-top:8px; font-size:14px;"></div>
+<div class="header">
+  <h1>📊 台股技術分析</h1>
+  <p>FINMIND API · MA5/10/20/60 · RSI14 · CLAUDE 格式輸出</p>
+</div>
+
+<!-- Token -->
+<div class="card">
+  <div class="card-title">🔑 FinMind Token</div>
+  <textarea id="token" placeholder="貼上你的 FinMind JWT Token..."></textarea>
+</div>
+
+<!-- 日期 -->
+<div class="card">
+  <div class="card-title">📅 查詢日期</div>
+  <div class="date-row">
+    <div class="input-group">
+      <label>起始日期</label>
+      <input type="date" id="startDate">
     </div>
-
-    <!-- 股票與日期 -->
-    <div class="card">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-        <div>
-          <label style="display:block; margin-bottom:8px; font-weight:600;">股票代碼</label>
-          <div style="display:flex; gap:8px;">
-            <input id="stock-input" type="text" placeholder="2330" style="flex:1;">
-            <button onclick="addStock()" class="btn-success">新增</button>
-          </div>
-          <div id="stock-list" style="margin-top:12px;"></div>
-        </div>
-        <div>
-          <label style="display:block; margin-bottom:8px; font-weight:600;">資料區間</label>
-          <input id="start-date" type="date">
-          <input id="end-date" type="date" style="margin-top:8px;">
-          <button onclick="fetchAndAnalyze()" class="btn-primary" style="width:100%; margin-top:16px;">取得資料並分析</button>
-        </div>
-      </div>
+    <div class="input-group">
+      <label>結束日期（收盤日）</label>
+      <input type="date" id="endDate">
     </div>
+  </div>
+</div>
 
-    <!-- 結果區域 -->
-    <div id="stocks-container" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;"></div>
+<!-- 股票清單 -->
+<div class="card">
+  <div class="card-title">📋 股票清單</div>
+  <div class="stock-tags" id="tags"></div>
+  <div class="add-row">
+    <input type="text" id="newStock" placeholder="輸入股票代碼，如 2330"
+      inputmode="numeric" maxlength="6">
+    <button class="btn btn-add" onclick="addStock()">＋ 新增</button>
+  </div>
+</div>
+
+<!-- 執行 -->
+<button class="btn btn-run" id="runBtn" onclick="run()">⚡ 開始抓取並計算</button>
+
+<div class="progress-wrap" id="progressWrap">
+  <div class="progress-bar"><div class="progress-fill" id="pFill"></div></div>
+</div>
+<div class="log" id="log"></div>
+
+<!-- 結果 -->
+<div class="results-wrap" id="resultsWrap">
+  <div class="card">
+    <div class="card-title">📈 計算結果</div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>股票</th>
+            <th>收盤</th>
+            <th>漲跌%</th>
+            <th>MA5</th>
+            <th>MA10</th>
+            <th>MA20</th>
+            <th>MA60</th>
+            <th>RSI14</th>
+            <th>排列</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
   </div>
 
-  <script>
-    let stocks = JSON.parse(localStorage.getItem('stocks')) || ['2330'];
-    let token = localStorage.getItem('finmind_token') || '';
+  <div class="card">
+    <div class="card-title">📋 複製給 Claude 分析</div>
+    <div class="output-box" id="outputBox">等待數據...</div>
+    <button class="btn btn-copy" id="copyBtn" onclick="copyAll()">
+      📋 一鍵複製 → 貼給 Claude
+    </button>
+  </div>
+</div>
 
-    function saveToken() {
-      token = document.getElementById('token-input').value.trim();
-      if (token) {
-        localStorage.setItem('finmind_token', token);
-        document.getElementById('token-status').innerHTML = '✅ Token 已儲存';
-      }
+<div class="toast" id="toast">✅ 已複製到剪貼簿！</div>
+
+<script>
+// ── 預設股票清單 ───────────────────────────────
+let stocks = [
+  {id:'2330',name:'台積電'},
+  {id:'3661',name:'世芯-KY'},
+  {id:'1519',name:'華城'},
+  {id:'6739',name:'竹陞科技'},
+  {id:'8074',name:'鉅橡'},
+  {id:'2344',name:'華邦電'},
+  {id:'6515',name:'穎崴'},
+  {id:'3498',name:'陽程'},
+  {id:'5386',name:'青雲'},
+  {id:'3221',name:'台嘉碩'},
+  {id:'6465',name:'威潤'},
+];
+
+let results = {};
+
+// ── 初始化日期 ─────────────────────────────────
+(function initDates() {
+  const today = new Date();
+  const start = new Date();
+  start.setDate(today.getDate() - 110);
+  document.getElementById('endDate').value = fmt(today);
+  document.getElementById('startDate').value = fmt(start);
+  function fmt(d) { return d.toISOString().split('T')[0]; }
+})();
+
+// ── Token 本地儲存 ─────────────────────────────
+(function loadToken() {
+  const saved = localStorage.getItem('finmind_token');
+  if (saved) document.getElementById('token').value = saved;
+})();
+document.getElementById('token').addEventListener('blur', function() {
+  if (this.value.trim()) localStorage.setItem('finmind_token', this.value.trim());
+});
+
+// ── 標籤渲染 ───────────────────────────────────
+function renderTags() {
+  document.getElementById('tags').innerHTML = stocks.map(s=>
+    `<div class="tag">
+      <span>${s.id}</span>
+      <span style="font-size:9px;opacity:.6">${s.name}</span>
+      <span class="x" onclick="removeStock('${s.id}')">×</span>
+    </div>`
+  ).join('');
+}
+
+function addStock() {
+  const el = document.getElementById('newStock');
+  const id = el.value.trim().replace(/\D/g,'');
+  if (!id || id.length < 4) return;
+  if (!stocks.find(s=>s.id===id)) stocks.push({id, name:id});
+  el.value = '';
+  renderTags();
+}
+
+function removeStock(id) {
+  stocks = stocks.filter(s=>s.id!==id);
+  renderTags();
+}
+
+document.getElementById('newStock').addEventListener('keydown', e => {
+  if(e.key==='Enter') addStock();
+});
+
+// ── 日誌 ───────────────────────────────────────
+let logLines = [];
+function log(msg, cls='info') {
+  logLines.push(`<span class="${cls}">${msg}</span>`);
+  if(logLines.length > 10) logLines.shift();
+  document.getElementById('log').innerHTML = logLines.join('<br>');
+}
+
+function setP(n, total) {
+  document.getElementById('pFill').style.width = Math.round(n/total*100)+'%';
+}
+
+// ── FinMind API（直接 fetch，GitHub Pages 支援 CORS） ──
+async function fetchStock(id, start, end, token) {
+  const url = new URL('https://api.finmindtrade.com/api/v4/data');
+  url.searchParams.set('dataset', 'TaiwanStockPrice');
+  url.searchParams.set('data_id', id);
+  url.searchParams.set('start_date', start);
+  url.searchParams.set('end_date', end);
+  url.searchParams.set('token', token);
+
+  const res = await fetch(url.toString(), {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' }
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = await res.json();
+  if (json.status !== 200) throw new Error(json.msg || 'API錯誤');
+  if (!json.data || json.data.length === 0) throw new Error('無資料（可能代碼錯誤）');
+  return json.data;
+}
+
+// ── 指標計算 ───────────────────────────────────
+function ma(arr, n) {
+  if(arr.length < n) return null;
+  const s = arr.slice(-n);
+  return s.reduce((a,b)=>a+b,0)/n;
+}
+
+function rsi(arr, n=14) {
+  if(arr.length < n+1) return null;
+  const s = arr.slice(-(n+1));
+  let g=0, l=0;
+  for(let i=1;i<s.length;i++) {
+    const d = s[i]-s[i-1];
+    if(d>0) g+=d; else l+=Math.abs(d);
+  }
+  if(l===0) return 100;
+  return 100-(100/(1+(g/n)/(l/n)));
+}
+
+function align(c, m5, m10, m20, m60) {
+  const ms = [m5,m10,m20,m60].filter(v=>v!==null);
+  if(ms.length<2) return 'mid';
+  if(ms.every(m=>c>m) && ms[0]>ms[1]) return 'bull';
+  if(ms.every(m=>c<m)) return 'bear';
+  return 'mid';
+}
+
+// ── 主流程 ─────────────────────────────────────
+async function run() {
+  const token = document.getElementById('token').value.trim();
+  const start = document.getElementById('startDate').value;
+  const end   = document.getElementById('endDate').value;
+
+  if(!token) { log('❌ 請先輸入 FinMind Token','err'); return; }
+  if(!start||!end) { log('❌ 請設定日期','err'); return; }
+  if(stocks.length===0) { log('❌ 請新增股票','err'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 抓取中...';
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('resultsWrap').style.display = 'block';
+  logLines = [];
+  results = {};
+
+  // 清空表格
+  document.getElementById('tbody').innerHTML = stocks.map(s=>
+    `<tr id="r${s.id}"><td>${s.id} ${s.name}</td>
+    <td colspan="8" class="dim">載入中...</td></tr>`
+  ).join('');
+  document.getElementById('outputBox').textContent = '計算中，請稍候...';
+
+  for(let i=0;i<stocks.length;i++) {
+    const s = stocks[i];
+    setP(i, stocks.length);
+    log(`📡 [${i+1}/${stocks.length}] ${s.id} ${s.name}`, 'info');
+
+    try {
+      const data = await fetchStock(s.id, start, end, token);
+      const closes = data.map(d=>d.close);
+      const last = data[data.length-1];
+      const prev = data.length>=2 ? data[data.length-2].close : null;
+
+      const m5  = ma(closes,5);
+      const m10 = ma(closes,10);
+      const m20 = ma(closes,20);
+      const m60 = ma(closes,60);
+      const r   = rsi(closes,14);
+      const chg = prev ? (last.close-prev)/prev*100 : null;
+      const a   = align(last.close, m5, m10, m20, m60);
+
+      results[s.id] = {
+        ...s, data, last, prev,
+        m5, m10, m20, m60, rsi:r, chg, align:a
+      };
+
+      const cc = chg>0?'up':chg<0?'down':'flat';
+      const cs = chg!==null ? `<span class="${cc}">${chg>0?'+':''}${chg.toFixed(2)}%</span>` : '-';
+      const f  = v => v!==null ? v.toFixed(1) : '<span class="dim">-</span>';
+      const rc = r>=70?'down':r<=30?'up':'';
+      const bdg = a==='bull'
+        ? '<span class="badge bull">多頭</span>'
+        : a==='bear'
+        ? '<span class="badge bear">空頭</span>'
+        : '<span class="badge mid">中性</span>';
+
+      document.getElementById('r'+s.id).innerHTML =
+        `<td>${s.id} ${s.name}</td>
+         <td class="${cc}">${last.close}</td>
+         <td>${cs}</td>
+         <td>${f(m5)}</td>
+         <td>${f(m10)}</td>
+         <td>${f(m20)}</td>
+         <td>${f(m60)}</td>
+         <td class="${rc}">${r!==null?r.toFixed(1):'<span class="dim">-</span>'}</td>
+         <td>${bdg}</td>`;
+
+      log(`✅ ${s.id} 完成（${data.length}筆）`, 'ok');
+
+    } catch(e) {
+      log(`❌ ${s.id} 失敗：${e.message}`, 'err');
+      document.getElementById('r'+s.id).innerHTML =
+        `<td>${s.id} ${s.name}</td>
+         <td colspan="8" class="err-row">❌ ${e.message}</td>`;
     }
 
-    function renderStockList() {
-      const container = document.getElementById('stock-list');
-      container.innerHTML = stocks.map((s, i) => `
-        <span class="stock-tag">${s} 
-          <span onclick="removeStock(${i}); event.stopImmediatePropagation()" style="margin-left:8px; color:#ef4444; cursor:pointer;">×</span>
-        </span>
-      `).join('');
-    }
+    if(i < stocks.length-1) await sleep(350);
+  }
 
-    function addStock() {
-      const code = document.getElementById('stock-input').value.trim().toUpperCase();
-      if (code && !stocks.includes(code)) {
-        stocks.push(code);
-        localStorage.setItem('stocks', JSON.stringify(stocks));
-        renderStockList();
-        document.getElementById('stock-input').value = '';
-      }
-    }
+  setP(stocks.length, stocks.length);
+  const done = Object.keys(results).length;
+  log(`🎉 完成！${done}/${stocks.length} 檔成功`, 'ok');
+  btn.disabled = false;
+  btn.textContent = '🔄 重新抓取';
 
-    function removeStock(i) {
-      stocks.splice(i, 1);
-      localStorage.setItem('stocks', JSON.stringify(stocks));
-      renderStockList();
-    }
+  buildOutput(end);
+}
 
-    function setDefaultDates() {
-      const end = new Date().toISOString().split('T')[0];
-      const start = new Date();
-      start.setFullYear(start.getFullYear() - 1);
-      document.getElementById('end-date').value = end;
-      document.getElementById('start-date').value = start.toISOString().split('T')[0];
-    }
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 
-    async function fetchAndAnalyze() {
-      const container = document.getElementById('stocks-container');
-      container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#6b7280;">🔄 正在取得資料...</div>';
+// ── 生成 Claude 輸出 ───────────────────────────
+function buildOutput(endDate) {
+  const lines = [];
+  lines.push(`===== 台股技術分析數據 ${endDate} 收盤 =====`);
+  lines.push(`資料來源：FinMind API | TaiwanStockPrice`);
+  lines.push(`指標：MA5/MA10/MA20/MA60（精確計算）、RSI14`);
+  lines.push(`請對每檔個股進行完整技術分析。`);
+  lines.push(`──────────────────────────────────────────`);
 
-      if (!token) {
-        alert('請先輸入並儲存 FinMind Token！');
-        return;
-      }
+  for(const id in results) {
+    const r = results[id];
+    const l = r.last;
+    const chgStr = r.chg!==null
+      ? `${r.chg>=0?'+':''}${r.chg.toFixed(2)}%`
+      : 'N/A';
+    const vol = Math.round(l.Trading_Volume/1000);
 
-      const start = document.getElementById('start-date').value;
-      const end = document.getElementById('end-date').value;
+    lines.push(`\n【${id} ${r.name}】`);
+    lines.push(`收盤:${l.close}  漲跌幅:${chgStr}  成交量:${vol}K張`);
+    lines.push(`開:${l.open}  高:${l.max}  低:${l.min}  昨收:${r.prev??'N/A'}`);
+    lines.push(`MA5:${r.m5!==null?r.m5.toFixed(2):'N/A'}  MA10:${r.m10!==null?r.m10.toFixed(2):'N/A'}  MA20:${r.m20!==null?r.m20.toFixed(2):'N/A'}  MA60:${r.m60!==null?r.m60.toFixed(2):'N/A'}`);
+    lines.push(`RSI14:${r.rsi!==null?r.rsi.toFixed(2):'N/A'}  均線排列:${r.align==='bull'?'多頭排列↑':r.align==='bear'?'空頭排列↓':'多空混合→'}`);
 
-      for (let code of stocks) {
-        try {
-          const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${code}&start_date=${start}&end_date=${end}`;
-          const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-          const json = await res.json();
-          if (json.data && json.data.length > 0) {
-            console.log(code + ' 資料取得成功');
-          }
-        } catch(e) {
-          console.error(code + ' 失敗', e);
-        }
-      }
+    // 近5日K線
+    const k5 = r.data.slice(-5).map(d=>
+      `  ${d.date} 開${d.open} 高${d.max} 低${d.min} 收${d.close} 量${Math.round(d.Trading_Volume/1000)}K`
+    ).join('\n');
+    lines.push(`近5日K線:\n${k5}`);
+    lines.push(`（數據${r.data.length}筆，MA60${r.data.length>=60?'✅足夠':'⚠️不足，需調長起始日期'}）`);
+  }
 
-      container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px; color:#10b981; font-size:18px;">✅ 資料取得完成！<br>（後續 K線與分析功能會繼續加入）</div>';
-    }
+  lines.push(`\n──────────────────────────────────────────`);
+  lines.push(`分析要求：`);
+  lines.push(`1. 每檔判斷趨勢型態（止跌/滯漲/續漲/續跌/趨勢不明）`);
+  lines.push(`2. 標示當前支撐位與下一支撐位`);
+  lines.push(`3. 標示當前壓力位與下一壓力位`);
+  lines.push(`4. 給出進場點位、停損、目標，或說明觀察等待原因`);
 
-    // 初始化
-    window.onload = () => {
-      renderStockList();
-      setDefaultDates();
-      if (token) document.getElementById('token-status').innerHTML = '✅ Token 已載入';
-    };
-  </script>
+  document.getElementById('outputBox').textContent = lines.join('\n');
+}
+
+// ── 複製 ───────────────────────────────────────
+function copyAll() {
+  const text = document.getElementById('outputBox').textContent;
+  if(!text || text.includes('等待') || text.includes('計算中')) return;
+
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(showToast).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+
+  function fallbackCopy() {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); showToast(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ── 啟動 ───────────────────────────────────────
+renderTags();
+</script>
 </body>
 </html>
