@@ -3,90 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>台股分析工具 - v2026-04-24 更新成功</title>
+  <title>台股分析工具 - 除錯版 v2026-04-24</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      margin:0; 
-      background:#f8fafc; 
-      padding:16px; 
-    }
-    .card { 
-      background:white; 
-      border-radius:16px; 
-      box-shadow:0 4px 15px rgba(0,0,0,0.08); 
-      padding:20px; 
-      margin-bottom:20px; 
-    }
-    input, button { 
-      width:100%; 
-      padding:14px; 
-      border-radius:12px; 
-      border:1px solid #ddd; 
-      font-size:16px; 
-      margin-bottom:10px; 
-    }
-    button { 
-      background:#4f46e5; 
-      color:white; 
-      border:none; 
-      font-weight:600; 
-    }
+    body { font-family: -apple-system, sans-serif; margin:0; background:#f8fafc; padding:16px; }
+    .card { background:white; border-radius:16px; box-shadow:0 4px 15px rgba(0,0,0,0.08); padding:20px; margin-bottom:20px; }
+    input, button { width:100%; padding:14px; border-radius:12px; border:1px solid #ddd; font-size:16px; margin-bottom:10px; }
+    button { background:#4f46e5; color:white; border:none; font-weight:600; }
     .btn-green { background:#10b981; }
-    .stock-tag { 
-      background:#e5e7eb; 
-      padding:8px 14px; 
-      border-radius:9999px; 
-      display:inline-flex; 
-      align-items:center; 
-      margin:4px 4px 4px 0; 
-      font-size:15px; 
-    }
-    .result { 
-      padding:30px; 
-      text-align:center; 
-      background:white; 
-      border-radius:16px; 
-      margin-top:20px; 
-      font-size:16px; 
-    }
+    .result { padding:20px; background:white; border-radius:16px; margin-top:20px; line-height:1.6; }
   </style>
 </head>
 <body>
   <div style="max-width:1100px; margin:0 auto;">
-    <!-- 明顯標題（方便確認更新） -->
-    <h1 style="text-align:center; font-size:28px; margin:20px 0; color:#4f46e5;">
-      📈 台股分析工具 - v2026-04-24 ✅ 更新成功
+    <!-- 明顯標題 -->
+    <h1 style="text-align:center; font-size:32px; color:#4f46e5; margin:20px 0;">
+      📈 台股分析工具 - 除錯版 v2026-04-24
     </h1>
 
-    <!-- Token -->
     <div class="card">
-      <p style="margin:0 0 8px 0; font-weight:600;">FinMind Token</p>
-      <input id="token-input" type="password" placeholder="貼上你的 Token">
+      <p style="font-weight:600;">FinMind Token</p>
+      <input id="token-input" type="password" placeholder="貼上完整 Token">
       <button onclick="saveToken()">儲存 Token</button>
-      <div id="token-status" style="margin-top:8px; font-size:14px; color:green;"></div>
+      <div id="token-status" style="margin-top:8px;"></div>
     </div>
 
-    <!-- 股票輸入 -->
     <div class="card">
-      <p style="margin:0 0 8px 0; font-weight:600;">股票代碼</p>
+      <p style="font-weight:600;">股票代碼</p>
       <div style="display:flex; gap:8px;">
-        <input id="stock-input" type="text" placeholder="例如：2330">
+        <input id="stock-input" type="text" placeholder="2330">
         <button onclick="addStock()" class="btn-green" style="width:auto; padding:0 24px;">新增</button>
       </div>
-      <div id="stock-list" style="margin-top:12px; min-height:50px;"></div>
+      <div id="stock-list" style="margin-top:12px;"></div>
     </div>
 
-    <!-- 日期 -->
     <div class="card">
-      <p style="margin:0 0 8px 0; font-weight:600;">資料區間（最多1年）</p>
+      <p style="font-weight:600;">日期區間</p>
       <input id="start-date" type="date">
       <input id="end-date" type="date" style="margin-top:8px;">
       <button onclick="fetchData()" style="margin-top:16px;">取得資料並分析</button>
     </div>
 
-    <!-- 結果 -->
     <div id="result" class="result" style="display:none;"></div>
   </div>
 
@@ -98,29 +55,24 @@
       token = document.getElementById('token-input').value.trim();
       if (token) {
         localStorage.setItem('finmind_token', token);
-        document.getElementById('token-status').innerHTML = '✅ Token 已儲存成功';
+        document.getElementById('token-status').innerHTML = '✅ Token 已儲存';
       } else {
         alert('請輸入 Token');
       }
     }
 
     function renderStocks() {
-      const container = document.getElementById('stock-list');
-      container.innerHTML = stocks.map((s, i) => `
-        <span class="stock-tag">${s} 
-          <span onclick="removeStock(${i}); event.stopImmediatePropagation()" style="margin-left:8px;color:red;cursor:pointer;">×</span>
-        </span>
-      `).join('');
+      document.getElementById('stock-list').innerHTML = stocks.map((s, i) => 
+        `<span style="background:#e5e7eb; padding:6px 12px; border-radius:9999px; margin:4px 4px 4px 0; display:inline-block;">${s} <span onclick="removeStock(${i});event.stopImmediatePropagation()" style="color:red;cursor:pointer;">×</span></span>`
+      ).join('');
     }
 
     function addStock() {
       const code = document.getElementById('stock-input').value.trim().toUpperCase();
-      if (code && !stocks.includes(code)) {
-        stocks.push(code);
-        localStorage.setItem('stocks', JSON.stringify(stocks));
-        renderStocks();
-        document.getElementById('stock-input').value = '';
-      }
+      if (code && !stocks.includes(code)) stocks.push(code);
+      localStorage.setItem('stocks', JSON.stringify(stocks));
+      renderStocks();
+      document.getElementById('stock-input').value = '';
     }
 
     function removeStock(i) {
@@ -143,33 +95,39 @@
       resultDiv.innerHTML = `<p>🔄 正在呼叫 FinMind API...</p>`;
 
       if (!token) {
-        resultDiv.innerHTML = `<p style="color:red;">❌ 請先儲存 Token</p>`;
+        resultDiv.innerHTML = `<p style="color:red;">❌ 請先輸入並儲存 Token</p>`;
         return;
       }
 
       const start = document.getElementById('start-date').value;
       const end = document.getElementById('end-date').value;
 
-      let output = `<p>✅ 已成功呼叫 API（v2026-04-24）</p><ul style="text-align:left; padding-left:20px;">`;
+      let html = `<p>✅ 已成功呼叫 API</p>`;
 
       for (let code of stocks) {
         try {
           const url = `https://api.finmindtrade.com/api/v4/data?dataset=TaiwanStockPrice&data_id=${code}&start_date=${start}&end_date=${end}`;
-          const res = await fetch(url, { headers: { "Authorization": `Bearer ${token}` } });
+          const res = await fetch(url, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+
+          if (!res.ok) {
+            html += `<p><strong>${code}：</strong> <span style="color:red;">HTTP 錯誤 ${res.status} (Token可能失效)</span></p>`;
+            continue;
+          }
+
           const json = await res.json();
-          
           if (json.data && json.data.length > 0) {
             const last = json.data[json.data.length-1];
-            output += `<li><strong>${code}</strong>：${last.close} 元 (${last.date}) 漲跌 ${last.spread}</li>`;
+            html += `<p><strong>${code}：</strong> ${last.close} 元 (${last.date}) 漲跌 ${last.spread}</p>`;
           } else {
-            output += `<li>${code}：無資料</li>`;
+            html += `<p><strong>${code}：</strong> <span style="color:orange;">無資料回傳</span></p>`;
           }
         } catch(e) {
-          output += `<li>${code}：連線失敗</li>`;
+          html += `<p><strong>${code}：</strong> <span style="color:red;">連線失敗 - ${e.message}</span></p>`;
         }
       }
-      output += `</ul>`;
-      resultDiv.innerHTML = output;
+      resultDiv.innerHTML = html;
     }
 
     window.onload = () => {
